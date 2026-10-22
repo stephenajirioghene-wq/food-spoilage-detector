@@ -1,0 +1,190 @@
+{
+  "meta": {
+    "schemaVersion": 1,
+    "experimentId": "RICE-SPOILT-001",
+    "deviceId": "FRIDGE001",
+    "sampleId": "RICE-S01",
+    "food": {
+      "name": "cooked rice",
+      "category": "cooked_meal",
+      "preparation": "cooked"
+    },
+    "startedAtMs": 1792446420062,
+    "storedAtMs": 1792451040000,
+    "purpose": "food_test",
+    "status": "completed",
+    "storage": {
+      "location": "refrigerator, same compartment as the device",
+      "container": "open, uncovered"
+    },
+    "portion": {
+      "amount": 0.25,
+      "unit": "kg",
+      "approximate": true
+    },
+    "priorStorage": "Unknown. Operator estimates the rice was cooked at least a week before the test.",
+    "otherFoodInCompartment": "none",
+    "notes": "cookedAtMs omitted because the cooking time is unknown. startedAtMs is the start of run R00062 (warm-up began then); the clean-air baseline used for scoring is 23:49 to 00:04 WAT. Readings were logged in calibration mode and labelled after the test; see runs/R00062/labelling."
+  },
+  "runs": {
+    "R00062": {
+      "bootCount": 88,
+      "bootEpochMs": 1792446420062,
+      "calibration": {
+        "calibrationState": "collecting_baseline",
+        "calibrationValidAfterRestart": false,
+        "calibrationVersion": "aug-2026-r0",
+        "resistanceUnit": "ohm"
+      },
+      "channels": {
+        "mq1": {
+          "curveA": 102.2,
+          "curveB": -2.473,
+          "curveGas": "NH3",
+          "model": "MQ135",
+          "note": "MQ135 is not selective; curveGas names the datasheet curve used for ppm, not a measured gas",
+          "pin": 34,
+          "ppmFormula": "curveA * (Rs/R0)^curveB, Rs = rlOhm * (supplyV - Vout) / Vout",
+          "r0Ohm": 7802.26,
+          "rlOhm": 2000,
+          "selective": false
+        },
+        "mq2": {
+          "curveA": 116.6021,
+          "curveB": -2.769035,
+          "curveGas": "CO2",
+          "model": "MQ135",
+          "note": "MQ135 is not selective; curveGas names the datasheet curve used for ppm, not a measured gas",
+          "pin": 35,
+          "ppmFormula": "curveA * (Rs/R0)^curveB, Rs = rlOhm * (supplyV - Vout) / Vout",
+          "r0Ohm": 3463.12,
+          "rlOhm": 1370,
+          "selective": false
+        }
+      },
+      "deviceId": "FRIDGE001",
+      "experimentId": "RICE-SPOILT-001",
+      "firmware": "fridge_monitor",
+      "firmwareVersion": "1.0.0",
+      "hardware": {
+        "adcBits": 12,
+        "adcMax": 4095,
+        "adcRefV": 3.3,
+        "attenuation": "11dB",
+        "supplyV": 5,
+        "temperatureHumidity": "not measured"
+      },
+      "latestPath": "telemetry/FRIDGE001/latest",
+      "periods": {
+        "historyPeriodS": 600,
+        "latestPeriodS": 60,
+        "recordPeriodS": 60,
+        "samplePeriodS": 2
+      },
+      "purpose": "food_test",
+      "resetReason": "BROWNOUT",
+      "runId": "R00062",
+      "runStartReason": "boot",
+      "runStartUptimeS": 0,
+      "runStartedAtMs": 1792446420062,
+      "sampleId": "RICE-S01",
+      "samplesPath": "telemetry/FRIDGE001/runs/R00062/samples",
+      "schemaVersion": 1,
+      "stabilisation": {
+        "nearAdcLimitV": 3.2,
+        "noSignalV": 0.05,
+        "noiseVSd": 0.02,
+        "rules": "per channel: fault if mean V < noSignalV (no_signal), any reading at 4095 (saturation) or mean V > nearAdcLimitV (near_adc_limit); else settling while uptime < settleS; else valid. high_noise flag if within-minute V SD > noiseVSd (state unchanged). quality.state = worst channel. timeSource rebuilt = epoch reconstructed from uptime after the first clock sync.",
+        "settleS": 3600
+      },
+      "timeSyncedAtMs": 1792446449695,
+      "wifiSource": "secrets",
+      "wifiSsid": "testpilot",
+      "labelling": {
+        "labelledAfterRun": true,
+        "boardRecordedAs": {
+          "experimentId": "CAL-R00062",
+          "sampleId": "NONE",
+          "purpose": "calibration"
+        },
+        "boardRunRecordPath": "experiments/CAL-R00062/runs/R00062",
+        "notes": "The board logged this run in calibration mode (no experimentId or sampleId set over Serial). The food_test label, experimentId and sampleId were added after the test from the operator log. The telemetry envelopes under samplesPath are unchanged and still carry experimentId CAL-R00062 and sampleId NONE."
+      },
+      "analysisWindows": {
+        "baseline": {
+          "fromMs": 1792450140000,
+          "toMs": 1792451040000,
+          "notes": "Clean air in the refrigerator before the rice went in; starts 2 minutes after the 1 h settling period ended (23:47)."
+        },
+        "food": {
+          "fromMs": 1792452000000,
+          "toMs": 1792457880000,
+          "notes": "Rice in place and response settled; ends when MQ2 reached the ADC limit."
+        }
+      }
+    }
+  },
+  "events": {
+    "R00062-food-in": {
+      "experimentId": "RICE-SPOILT-001",
+      "runId": "R00062",
+      "type": "storage_change",
+      "observedAtMs": 1792451040000,
+      "notes": "Spoilt rice (about 0.25 kg, open, uncovered) placed in the refrigerator with the device. Before this the rice was kept sealed outside the refrigerator."
+    },
+    "R00062-door-0009": {
+      "experimentId": "RICE-SPOILT-001",
+      "runId": "R00062",
+      "type": "door_opened",
+      "observedAtMs": 1792451340000,
+      "notes": "Refrigerator door opened at 00:09 WAT and closed at 00:10 WAT."
+    },
+    "R00062-mq1-step-0034": {
+      "experimentId": "RICE-SPOILT-001",
+      "runId": "R00062",
+      "type": "other",
+      "observedAtMs": 1792452900000,
+      "notes": "MQ1 voltage stepped down from about 2.55 V to 1.85 V at 00:34 to 00:35 WAT and recovered over about 8 minutes; MQ2 barely changed. Operator confirms nothing was done to the device or refrigerator. Cause unknown."
+    },
+    "R00062-mq2-adc-limit": {
+      "experimentId": "RICE-SPOILT-001",
+      "runId": "R00062",
+      "type": "other",
+      "observedAtMs": 1792457880000,
+      "notes": "MQ2 output reached the 3.3 V ADC limit on almost every sample from 01:58 WAT (quality fault, saturation). MQ2 readings from then on are a lower bound on gas level, not a measurement."
+    },
+    "R00062-food-out": {
+      "experimentId": "RICE-SPOILT-001",
+      "runId": "R00062",
+      "type": "storage_change",
+      "observedAtMs": 1792458540000,
+      "notes": "Rice removed at about 02:09 WAT (time approximate). The operator handled the device while removing it. The refrigerator still smelled strongly, so recovery toward baseline was not measured."
+    },
+    "R00064-restart": {
+      "experimentId": "RICE-SPOILT-001",
+      "runId": "R00064",
+      "type": "device_restart",
+      "observedAtMs": 1792458540959,
+      "resetReason": "BROWNOUT",
+      "notes": "Board restarted with reset reason BROWNOUT at about 02:09 WAT while the operator was removing the rice and handling the device. After the food period; not used in analysis."
+    },
+    "R00063-restart": {
+      "experimentId": "RICE-SPOILT-001",
+      "runId": "R00063",
+      "type": "device_restart",
+      "observedAtMs": 1792458625241,
+      "resetReason": "TASK_WDT",
+      "notes": "Board restarted with reset reason TASK_WDT at about 02:10 WAT. After the food period; not used in analysis."
+    }
+  },
+  "observations": {
+    "RICE-S01-obs-0011": {
+      "experimentId": "RICE-SPOILT-001",
+      "sampleId": "RICE-S01",
+      "observedAtMs": 1792451460000,
+      "label": "spoiled",
+      "method": "operator_note",
+      "notes": "Smell and visual check by the operator: terrible smell; some grains turned yellow. No slime or mould seen (sample was refrigerated). Operator estimates the rice was at least a week old."
+    }
+  }
+}

@@ -1,0 +1,13 @@
+# Private settings: every secrets.h, in any folder. Copy secrets.example.h instead.
+secrets.h
+**/secrets.h
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Older sketches, backups and the 1.1.0 package: kept locally, not part of 1.2.0
+archive/
+
+# Full database export (top-level folder only; docs/rice_test_RICE-SPOILT-001/ stays tracked)
+/rice_test_RICE-SPOILT-001/

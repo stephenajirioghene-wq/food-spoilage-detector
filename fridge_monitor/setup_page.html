@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FRIDGE001 Wi-Fi setup</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0 auto;padding:16px;background:#f4f6f8;color:#1b1f23;max-width:480px}
+h1{font-size:1.3em;margin:0 0 12px}
+.card{background:#fff;border-radius:10px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.note{background:#fff7e0;border-left:4px solid #e0a800;padding:10px;border-radius:6px;font-size:.92em;margin-bottom:12px}
+label{display:block;font-weight:600;margin:12px 0 4px}
+input[type=text],input[type=password]{width:100%;box-sizing:border-box;font-size:1.05em;padding:10px;border:1px solid #bbb;border-radius:6px}
+button{font-size:1em;padding:10px 16px;border:0;border-radius:6px;background:#0b6bcb;color:#fff;margin-top:12px}
+button.sec{background:#e4e8ec;color:#1b1f23;margin-top:0}
+button.danger{background:#c62828;margin-top:0}
+button:disabled{opacity:.5}
+#nets{list-style:none;padding:0;margin:10px 0 0}
+#nets li{display:flex;justify-content:space-between;gap:8px;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:6px;cursor:pointer;word-break:break-all}
+#nets li.sel{border-color:#0b6bcb;background:#eaf3fd}
+.sig{color:#555;font-size:.9em;white-space:nowrap}
+.head{display:flex;justify-content:space-between;align-items:center}
+#msg{margin-top:12px;font-weight:600}
+.ok{color:#1b7f2a}.fail{color:#c62828}
+small{color:#555}
+#exp input:not([type=checkbox]),#exp select,#exp textarea{width:100%;box-sizing:border-box;font-size:1.05em;padding:10px;border:1px solid #bbb;border-radius:6px;background:#fff;font-family:inherit}
+#exp textarea{height:4.5em}
+.two{display:flex;gap:8px;align-items:center}.two>*{flex:1}.two>button{flex:0 0 auto;margin-top:0}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}.tabs button{flex:1;margin-top:0;background:#e4e8ec;color:#1b1f23;padding:10px 6px}
+.tabs button.on{background:#0b6bcb;color:#fff}
+.kv{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid #eee;word-break:break-all}.kv span{color:#555}
+#emsg{font-weight:600;margin-bottom:12px;white-space:pre-line}
+h2{font-size:1.2em;margin:24px 0 12px}
+</style></head><body>
+<h1>FRIDGE001 Wi-Fi setup</h1>
+<div class="note">The board only joins <b>2.4 GHz</b> Wi-Fi. Set your phone hotspot to 2.4 GHz (iPhone: turn on "Maximise Compatibility").</div>
+<div class="card">Saved network: <b id="saved">...</b><br><small id="left"></small></div>
+<div class="card">
+<div class="head"><b>Networks nearby</b><button class="sec" id="refresh" type="button">Refresh</button></div>
+<ul id="nets"><li>Scanning...</li></ul>
+<label for="ssid">Network name (type it for a hidden network)</label>
+<input type="text" id="ssid" maxlength="32" autocapitalize="none" autocorrect="off" spellcheck="false">
+<label for="pass">Password</label>
+<input type="password" id="pass" maxlength="63" autocapitalize="none" autocorrect="off" spellcheck="false">
+<label style="font-weight:400"><input type="checkbox" id="show"> Show password</label>
+<button id="save" type="button">Save</button>
+<div id="msg"></div>
+</div>
+<div class="card"><button class="danger" id="forget" type="button">Forget saved network</button><br>
+<small>The board then uses the network in secrets.h.</small></div>
+
+<div id="exp">
+<h2>Experiment</h2>
+<div class="card">
+<div class="kv"><span>Mode</span><b id="s_mode">...</b></div>
+<div class="kv"><span>experimentId</span><b id="s_exp"></b></div>
+<div class="kv"><span>sampleId</span><b id="s_smp"></b></div>
+<div class="kv"><span>Food</span><b id="s_food"></b></div>
+<div class="kv"><span>runId</span><b id="s_run"></b></div>
+<div class="kv"><span>Quality</span><b id="s_q"></b></div>
+<div class="kv"><span>Settling</span><b id="s_settle"></b></div>
+<div class="kv"><span>Spoilage alert</span><b id="s_al"></b></div>
+<div class="kv"><span>Baseline</span><b id="s_bl"></b></div>
+<div class="kv" id="k_fr" hidden><span>Food reference (record only)</span><b id="s_fr"></b></div>
+<p class="fail" id="s_blwhy" hidden></p>
+<button class="danger" id="silence" type="button" hidden>Silence alarm</button>
+<div class="kv"><span>Board time (WAT)</span><b id="s_time"></b></div>
+<div class="kv"><span>Waiting to upload</span><b id="s_up"></b></div>
+<div class="kv"><span>Last app command</span><b id="s_cmd">none</b></div>
+</div>
+<div class="tabs"><button type="button" data-t="start">Start</button><button type="button" data-t="obs">Observation</button><button type="button" data-t="ev">Event</button><button type="button" data-t="end">End</button></div>
+<div id="emsg"></div>
+
+<div class="card" id="t_start">
+<p class="fail need" data-need="0">End the current experiment first</p>
+<form id="f_start" data-need="1">
+<small>Keep the food out until the LCD shows CAL READY (15 min of clean air after settling, one long beep): the board takes each sensor's baseline from those minutes. Then put the food in and press Start.</small>
+<label>Food name *</label><input name="food" maxlength="40" required>
+<label>experimentId *</label><input name="exp" maxlength="32" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
+<label>sampleId *</label><input name="smp" maxlength="32" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
+<small>A-Z, 0-9 and - only, 3 to 32 characters. Lower case is converted to upper case.</small>
+<label>Storage location *</label><input name="loc" maxlength="80" required value="refrigerator, same compartment as the device">
+<label>Container</label><input name="cont" maxlength="60" placeholder="e.g. plastic bowl">
+<label>Covered or open</label><select name="cover"><option value="">not recorded</option><option>covered</option><option>open</option></select>
+<label>Portion</label><div class="two"><input name="pamt" type="number" step="any" min="0" inputmode="decimal"><select name="punit"><option>g</option><option>kg</option><option>ml</option><option>pieces</option></select></div>
+<label>Cooked at (WAT)</label><input name="cooked" type="datetime-local"><small>Leave blank if unknown.</small>
+<label>Stored at (WAT)</label><div class="two"><input name="stored" type="datetime-local"><button type="button" class="sec" data-now="stored">now</button></div>
+<small>When the sample entered storage. Leave blank if unknown.</small>
+<label>Recipe or ingredients</label><input name="recipe" maxlength="120">
+<label>Prior storage or reheating</label><input name="prior" maxlength="120">
+<label>Other food in the compartment</label><input name="others" maxlength="120" placeholder="list every dish sharing the compartment">
+<label>Notes</label><textarea name="notes" maxlength="200"></textarea>
+<button>Start experiment</button>
+</form>
+</div>
+
+<div class="card" id="t_obs" hidden>
+<p class="fail need" data-need="1">Start an experiment first</p>
+<form id="f_obs" data-need="0">
+<small>Record what you smell or see yourself. The board does not suggest a label from its sensors.</small>
+<label>Label</label><select name="label"><option>unknown</option><option>fresh</option><option>spoiled</option><option>inconclusive</option></select>
+<label>Method</label><select name="method"><option value="smell">smell</option><option value="visual">visual</option><option value="smell_and_visual">smell and visual</option><option value="other">other</option></select>
+<input name="mnote" maxlength="60" placeholder="other method" hidden>
+<label>Observed at (WAT, blank = now)</label><div class="two"><input name="at" type="datetime-local"><button type="button" class="sec" data-now="at">now</button></div>
+<label>Notes</label><textarea name="notes" maxlength="200"></textarea>
+<button>Save observation</button>
+</form>
+</div>
+
+<div class="card" id="t_ev" hidden>
+<p class="fail need" data-need="1">Start an experiment first</p>
+<form id="f_ev" data-need="0">
+<label>Type</label><select name="type"><option value="storage_change">storage change</option><option value="door_opened">door opened</option><option value="power_outage">power cut</option><option value="sample_replaced">sample replaced</option><option value="other">other</option></select>
+<div data-ev="storage_change"><label>Change</label><select name="sc"><option value="food_in">food in</option><option value="food_out">food out</option><option value="moved">moved</option></select></div>
+<div data-ev="power_outage" hidden><label>Which power</label><select name="ps"><option value="sensor_power">sensor power</option><option value="refrigeration_power">refrigeration power</option><option value="both">both</option><option value="unknown">unknown</option></select></div>
+<label>Time (WAT, blank = now)</label><div class="two"><input name="at" type="datetime-local"><button type="button" class="sec" data-now="at">now</button></div>
+<div data-ev="door_opened" hidden><label>Door closed at (WAT)</label><div class="two"><input name="closed" type="datetime-local"><button type="button" class="sec" data-now="closed">now</button></div></div>
+<div data-ev="sample_replaced" class="note" hidden>A new sample needs a NEW experiment with a new experimentId and sampleId (app team requirements). Log this event, then end the current experiment and start a new one.<br><button type="button" class="sec" id="go_end" style="margin-top:8px">Go to End experiment</button></div>
+<label>Notes</label><textarea name="notes" maxlength="200"></textarea>
+<button>Log event</button>
+</form>
+</div>
+
+<div class="card" id="t_end" hidden>
+<p class="fail need" data-need="1">No experiment is running</p>
+<form id="f_end" data-need="0">
+<label>Final status</label><select name="status"><option>completed</option><option>interrupted</option><option>abandoned</option></select>
+<label>Notes</label><textarea name="notes" maxlength="200"></textarea>
+<button class="danger" style="margin-top:12px">End experiment</button>
+</form>
+</div>
+</div>
+<script>
+var polling=false;
+function $(i){return document.getElementById(i)}
+function msg(t,c){var m=$('msg');m.textContent=t;m.className=c||''}
+function q(r){return r>=-60?'strong':r>=-72?'good':r>=-82?'weak':'very weak'}
+function bytes(s){return window.TextEncoder?new TextEncoder().encode(s).length:s.length}
+function scan(refresh){
+  $('refresh').disabled=true;
+  fetch('/scan'+(refresh?'?refresh=1':'')).then(function(r){return r.json()}).then(function(j){
+    if(j.busy){setTimeout(function(){scan(0)},1500);return}
+    var ul=$('nets');ul.textContent='';
+    if(!j.networks.length){var e=document.createElement('li');e.textContent='No 2.4 GHz networks found';ul.appendChild(e)}
+    j.networks.forEach(function(n){
+      var li=document.createElement('li'),a=document.createElement('span'),b=document.createElement('span');
+      a.textContent=n.ssid+(n.secure?'':' (open)');
+      b.className='sig';b.textContent=n.rssi+' dBm, '+q(n.rssi);
+      li.appendChild(a);li.appendChild(b);
+      li.onclick=function(){$('ssid').value=n.ssid;
+        [].forEach.call(ul.children,function(x){x.classList.remove('sel')});li.classList.add('sel');$('pass').focus()};
+      ul.appendChild(li)});
+    $('refresh').disabled=false;
+  }).catch(function(){setTimeout(function(){scan(0)},3000)});
+}
+function status(){
+  fetch('/status').then(function(r){return r.json()}).then(function(j){
+    $('saved').textContent=j.saved||'none';
+    $('left').textContent='Setup closes in '+Math.floor(j.left/60)+':'+('0'+j.left%60).slice(-2);
+    if(j.state=='testing'){$('save').disabled=true;msg('Connecting to '+j.ssid+' (up to 15 s)...');return}
+    $('save').disabled=false;
+    if(!polling)return;
+    polling=false;
+    if(j.state=='ok')msg('Connected to '+j.ssid+', signal '+j.rssi+' dBm ('+q(j.rssi)+'). Saved. Release the Wi-Fi button on the fridge.','ok');
+    else if(j.state=='fail')msg('Could not connect to '+j.ssid+': '+j.reason+'. Nothing was saved.','fail');
+  }).catch(function(){});
+}
+$('show').onchange=function(){$('pass').type=this.checked?'text':'password'};
+$('refresh').onclick=function(){$('nets').textContent='';var e=document.createElement('li');e.textContent='Scanning...';$('nets').appendChild(e);scan(1)};
+$('save').onclick=function(){
+  var s=$('ssid').value,p=$('pass').value;
+  if(!s){msg('Pick or type a network name.','fail');return}
+  if(bytes(s)>32){msg('Network name is longer than 32 characters.','fail');return}
+  if(bytes(p)>63){msg('Password is longer than 63 characters.','fail');return}
+  if(p.length&&p.length<8){msg('Wi-Fi passwords have at least 8 characters (leave it empty for an open network).','fail');return}
+  $('save').disabled=true;msg('Connecting to '+s+' (up to 15 s)...');
+  fetch('/save',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'ssid='+encodeURIComponent(s)+'&pass='+encodeURIComponent(p)})
+    .then(function(r){return r.json()}).then(function(j){
+      if(!j.ok){msg(j.error,'fail');$('save').disabled=false}else polling=true})
+    .catch(function(){polling=true});
+};
+$('forget').onclick=function(){
+  if(!confirm('Forget the saved network? The board will use the network in secrets.h.'))return;
+  fetch('/forget',{method:'POST'}).then(function(r){return r.json()}).then(function(){msg('Saved network forgotten.');status()});
+};
+scan(0);status();setInterval(status,2000);
+
+// ---- Experiment ----
+var S={},got=0,tab='start';
+function wat(ms){return new Date(ms+3600000).toISOString().slice(0,16)}
+function boardNow(){return S.t?S.t+(Date.now()-got):0}
+function emsg(t,c){var m=$('emsg');m.textContent=t;m.className=c||''}
+function set(i,t){$(i).textContent=t}
+function show(t){tab=t;['start','obs','ev','end'].forEach(function(x){$('t_'+x).hidden=x!=t});
+  [].forEach.call(document.querySelectorAll('.tabs button'),function(b){b.className=b.dataset.t==t?'on':''})}
+function render(){
+  var run=S.mode=='food_test';
+  set('s_mode',S.mode);set('s_exp',S.exp);set('s_smp',S.smp||'-');set('s_food',S.food||'-');set('s_run',S.run);
+  set('s_q',S.q);set('s_settle',S.settle>0?Math.floor(S.settle/60)+' min left':'over');
+  set('s_time',S.sync?wat(boardNow()).replace('T',' '):'not synced yet (waiting for time sync)');
+  set('s_up',S.uns+' records, '+S.ob+' experiment records'+(S.online?'':' (offline)')+(S.rej?', '+S.rej+' rejected':''));
+  var AL={off:'off (calibration mode)',no_baseline:'no baseline',settling:'settling',fault:'sensor fault',normal:'FRESH',warning:'WARNING',critical:'SPOILT'};
+  var a=AL[S.al]||S.al;
+  if(S.sc!=null)a+=' '+S.sc+'%';
+  if(run&&(S.al=='settling'||S.al=='fault')&&S.band!='normal')a+=' (held: '+S.band+')';
+  if(S.r1!=null||S.r2!=null)a+=', Rs/baseline mq1 '+(S.r1!=null?S.r1:'-')+', mq2 '+(S.r2!=null?S.r2:'-');
+  if(S.sil)a+=', silenced';if(S.test)a+=' TEST';
+  set('s_al',a);
+  set('s_bl',run?S.bl:(S.bwReady?'CAL READY: put the food in now, then Start':S.bwOk?'usable, not full yet: keep the food out until CAL READY':'not ready: keep the food out')+
+    ' (mq1 '+S.bwn1+', mq2 '+S.bwn2+' valid records; '+S.bwNeed+' needed, '+S.bwFull+' for CAL READY)');
+  $('k_fr').hidden=!run;set('s_fr',S.fr||'');
+  $('s_blwhy').textContent=S.blWhy||'';$('s_blwhy').hidden=!S.blWhy;
+  $('silence').hidden=!(run&&S.al=='critical'&&!S.sil);
+  if(S.cmd&&S.cmd.id)set('s_cmd',S.cmd.id+' '+S.cmd.type+' '+S.cmd.status+(S.cmd.at?' '+wat(S.cmd.at).replace('T',' '):'')+(S.cmd.reason?' ('+S.cmd.reason+')':''));
+  [].forEach.call(document.querySelectorAll('[data-need]'),function(e){e.hidden=(e.dataset.need=='1')!=run});
+  sug();
+}
+function state(){fetch('/exp').then(function(r){return r.json()}).then(function(j){S=j;got=Date.now();render()}).catch(function(){})}
+function sug(){
+  var f=$('f_start');if(!S.day)return;
+  var p=f.food.value.toUpperCase().replace(/\s+/g,'-').replace(/[^A-Z0-9-]/g,'').replace(/-+/g,'-').replace(/^-/,'').slice(0,20).replace(/-$/,'');
+  var id=p?p+'-'+S.day+'-'+('0'+S.nn).slice(-2):'';
+  if(!f.exp.dataset.ed)f.exp.value=id;
+  if(!f.smp.dataset.ed)f.smp.value=f.exp.value?f.exp.value.slice(0,28).replace(/-$/,'')+'-S01':'';
+}
+function post(url,form,done){
+  var b=form.querySelector('button:not([type=button])');b.disabled=true;emsg('Saving...');
+  fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(new FormData(form)).toString()})
+  .then(function(r){return r.json()}).then(function(j){b.disabled=false;emsg(j.msg,j.ok?'ok':'fail');if(j.ok&&done)done();state();window.scrollTo(0,$('emsg').offsetTop-10)})
+  .catch(function(){b.disabled=false;emsg('No answer from the board. Check the LCD and try again.','fail')});
+}
+[].forEach.call(document.querySelectorAll('.tabs button'),function(b){b.onclick=function(){emsg('');show(b.dataset.t)}});
+[].forEach.call(document.querySelectorAll('[data-now]'),function(b){b.onclick=function(){
+  if(!S.sync){emsg('Waiting for time sync','fail');return}b.form.elements[b.dataset.now].value=wat(boardNow())}});
+var fs=$('f_start');
+fs.food.oninput=sug;
+fs.exp.oninput=function(){fs.exp.dataset.ed=fs.exp.value?1:'';sug()};
+fs.smp.oninput=function(){fs.smp.dataset.ed=fs.smp.value?1:''};
+fs.exp.onblur=function(){fs.exp.value=fs.exp.value.toUpperCase()};
+fs.smp.onblur=function(){fs.smp.value=fs.smp.value.toUpperCase()};
+fs.onsubmit=function(e){e.preventDefault();post('/exp/start',fs,function(){fs.reset();delete fs.exp.dataset.ed;delete fs.smp.dataset.ed})};
+var fo=$('f_obs');
+fo.method.onchange=function(){fo.mnote.hidden=fo.method.value!='other'};
+fo.onsubmit=function(e){e.preventDefault();post('/exp/obs',fo,function(){fo.reset();fo.mnote.hidden=true})};
+var fe=$('f_ev');
+function evShow(){[].forEach.call(document.querySelectorAll('[data-ev]'),function(d){d.hidden=d.dataset.ev!=fe.type.value})}
+fe.type.onchange=evShow;
+$('go_end').onclick=function(){emsg('');show('end')};
+fe.onsubmit=function(e){e.preventDefault();post('/exp/event',fe,function(){fe.reset();evShow()})};
+var fn=$('f_end');
+fn.onsubmit=function(e){e.preventDefault();
+  if(!confirm('End experiment '+S.exp+' as '+fn.status.value+'? The board goes back to calibration mode.'))return;
+  post('/exp/end',fn,function(){fn.reset()})};
+$('silence').onclick=function(){var b=this;b.disabled=true;
+  fetch('/exp/silence',{method:'POST'}).then(function(r){return r.json()}).then(function(j){b.disabled=false;emsg(j.msg,j.ok?'ok':'fail');state()})
+  .catch(function(){b.disabled=false;emsg('No answer from the board. Check the LCD and try again.','fail')})};
+show('start');state();setInterval(state,5000);
+</script></body></html>
